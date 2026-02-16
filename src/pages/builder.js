@@ -4,38 +4,38 @@
  */
 import { store } from '../store/resume-store.js';
 import {
-    createExperienceEntry, createBulletPoint, createEducationEntry,
-    createSkillEntry, createCertificationEntry, createProjectEntry,
-    createAwardEntry
+  createExperienceEntry, createBulletPoint, createEducationEntry,
+  createSkillEntry, createCertificationEntry, createProjectEntry,
+  createAwardEntry
 } from '../models/resume-schema.js';
 import { extractTextFromFile } from '../services/file-parser.js';
 import { parseLinkedInExport } from '../services/linkedin-import.js';
 import {
-    parseTextToResume, suggestSkills, enhanceBulletPoint, generateSummary
+  parseTextToResume, suggestSkills, enhanceBulletPoint, generateSummary
 } from '../services/ai-enhance.js';
 import { isConfigured } from '../services/llm-service.js';
 import { downloadJSON } from '../services/export-service.js';
 import { showToast } from '../utils/toast.js';
 
 const STEPS = [
-    { id: 'import', label: 'Import', icon: '📥' },
-    { id: 'contact', label: 'Contact', icon: '👤' },
-    { id: 'experience', label: 'Experience', icon: '💼' },
-    { id: 'education', label: 'Education', icon: '🎓' },
-    { id: 'skills', label: 'Skills', icon: '⚡' },
-    { id: 'projects', label: 'Projects', icon: '🚀' },
-    { id: 'certs', label: 'Certifications', icon: '📜' },
-    { id: 'summary', label: 'Summary', icon: '📝' },
-    { id: 'review', label: 'Review', icon: '✅' },
+  { id: 'import', label: 'Import', icon: '📥' },
+  { id: 'contact', label: 'Contact', icon: '👤' },
+  { id: 'experience', label: 'Experience', icon: '💼' },
+  { id: 'education', label: 'Education', icon: '🎓' },
+  { id: 'skills', label: 'Skills', icon: '⚡' },
+  { id: 'projects', label: 'Projects', icon: '🚀' },
+  { id: 'certs', label: 'Certifications', icon: '📜' },
+  { id: 'summary', label: 'Summary', icon: '📝' },
+  { id: 'review', label: 'Review', icon: '✅' },
 ];
 
 export function renderBuilderPage() {
-    const page = document.createElement('div');
-    page.className = 'builder-page';
-    let currentStep = 0;
+  const page = document.createElement('div');
+  page.className = 'builder-page';
+  let currentStep = 0;
 
-    function render() {
-        page.innerHTML = `
+  function render() {
+    page.innerHTML = `
       <style>
         .builder-page { padding-bottom: var(--space-16); }
         .builder-header {
@@ -190,17 +190,17 @@ export function renderBuilderPage() {
       <div class="wizard-nav">
         ${currentStep > 0 ? '<button class="btn btn-secondary" id="wizard-prev">← Previous</button>' : ''}
         ${currentStep < STEPS.length - 1
-                ? '<button class="btn btn-primary" id="wizard-next">Next →</button>'
-                : '<button class="btn btn-primary" id="wizard-download">📥 Download Master Resume</button>'}
+        ? '<button class="btn btn-primary" id="wizard-next">Next →</button>'
+        : '<button class="btn btn-primary" id="wizard-download">📥 Download Master Resume</button>'}
       </div>
     `;
 
-        attachStepEvents(currentStep);
-        attachNavEvents();
-    }
+    attachStepEvents(currentStep);
+    attachNavEvents();
+  }
 
-    function renderProgress(step) {
-        return `<div class="wizard-progress">
+  function renderProgress(step) {
+    return `<div class="wizard-progress">
       ${STEPS.map((s, i) => `
         ${i > 0 ? `<div class="wizard-connector ${i <= step ? 'completed' : ''}"></div>` : ''}
         <div class="wizard-step ${i === step ? 'active' : ''} ${i < step ? 'completed' : ''}" data-step="${i}">
@@ -209,27 +209,27 @@ export function renderBuilderPage() {
         </div>
       `).join('')}
     </div>`;
-    }
+  }
 
-    function renderStep(step) {
-        const resume = store.getResume();
-        switch (STEPS[step].id) {
-            case 'import': return renderImportStep();
-            case 'contact': return renderContactStep(resume.contact);
-            case 'experience': return renderExperienceStep(resume.experience);
-            case 'education': return renderEducationStep(resume.education);
-            case 'skills': return renderSkillsStep(resume.skills);
-            case 'projects': return renderProjectsStep(resume.projects);
-            case 'certs': return renderCertsStep(resume.certifications);
-            case 'summary': return renderSummaryStep(resume.summary, resume.experience, resume.skills);
-            case 'review': return renderReviewStep(resume);
-            default: return '';
-        }
+  function renderStep(step) {
+    const resume = store.getResume();
+    switch (STEPS[step].id) {
+      case 'import': return renderImportStep();
+      case 'contact': return renderContactStep(resume.contact);
+      case 'experience': return renderExperienceStep(resume.experience);
+      case 'education': return renderEducationStep(resume.education);
+      case 'skills': return renderSkillsStep(resume.skills);
+      case 'projects': return renderProjectsStep(resume.projects);
+      case 'certs': return renderCertsStep(resume.certifications);
+      case 'summary': return renderSummaryStep(resume.summary, resume.experience, resume.skills);
+      case 'review': return renderReviewStep(resume);
+      default: return '';
     }
+  }
 
-    // ---------- IMPORT STEP ----------
-    function renderImportStep() {
-        return `
+  // ---------- IMPORT STEP ----------
+  function renderImportStep() {
+    return `
       <div class="section-title">Import Existing Data</div>
       <div class="section-subtitle">Jumpstart your master resume by importing from existing sources</div>
 
@@ -241,8 +241,8 @@ export function renderBuilderPage() {
         </div>
         <div class="card card-interactive import-card" id="import-linkedin">
           <span class="import-card-icon">💼</span>
-          <h4>LinkedIn Export</h4>
-          <p>Upload your LinkedIn data ZIP</p>
+          <h4>LinkedIn PDF</h4>
+          <p>Upload your LinkedIn Profile PDF</p>
         </div>
         <div class="card card-interactive import-card" id="import-text">
           <span class="import-card-icon">📋</span>
@@ -257,7 +257,7 @@ export function renderBuilderPage() {
       </div>
 
       <input type="file" id="file-input-resume" accept=".pdf,.docx,.doc" style="display:none" />
-      <input type="file" id="file-input-linkedin" accept=".zip" style="display:none" />
+      <input type="file" id="file-input-linkedin" accept=".pdf" style="display:none" />
       <input type="file" id="file-input-json" accept=".json" style="display:none" />
 
       <div id="import-text-area" class="hidden">
@@ -277,11 +277,11 @@ export function renderBuilderPage() {
         You can skip this step and fill in your details manually in the following steps.
       </p>
     `;
-    }
+  }
 
-    // ---------- CONTACT STEP ----------
-    function renderContactStep(contact) {
-        return `
+  // ---------- CONTACT STEP ----------
+  function renderContactStep(contact) {
+    return `
       <div class="section-title">Contact Information</div>
       <div class="section-subtitle">How recruiters and hiring managers can reach you</div>
       <div class="entry-form">
@@ -319,11 +319,11 @@ export function renderBuilderPage() {
         </div>
       </div>
     `;
-    }
+  }
 
-    // ---------- EXPERIENCE STEP ----------
-    function renderExperienceStep(experience) {
-        return `
+  // ---------- EXPERIENCE STEP ----------
+  function renderExperienceStep(experience) {
+    return `
       <div class="flex justify-between items-center mb-4">
         <div>
           <div class="section-title">Work Experience</div>
@@ -341,11 +341,11 @@ export function renderBuilderPage() {
         ` : experience.map((exp, i) => renderExperienceEntry(exp, i)).join('')}
       </div>
     `;
-    }
+  }
 
-    function renderExperienceEntry(exp, index) {
-        const bullets = exp.bullets || [];
-        return `
+  function renderExperienceEntry(exp, index) {
+    const bullets = exp.bullets || [];
+    return `
       <div class="entry-form" data-exp-id="${exp.id}">
         <div class="entry-header">
           <div class="flex-1">
@@ -406,11 +406,11 @@ export function renderBuilderPage() {
         </div>
       </div>
     `;
-    }
+  }
 
-    // ---------- EDUCATION STEP ----------
-    function renderEducationStep(education) {
-        return `
+  // ---------- EDUCATION STEP ----------
+  function renderEducationStep(education) {
+    return `
       <div class="flex justify-between items-center mb-4">
         <div>
           <div class="section-title">Education</div>
@@ -474,15 +474,15 @@ export function renderBuilderPage() {
         `).join('')}
       </div>
     `;
-    }
+  }
 
-    // ---------- SKILLS STEP ----------
-    function renderSkillsStep(skills) {
-        const techSkills = skills.technical || [];
-        const softSkills = skills.soft || [];
-        const languages = skills.languages || [];
+  // ---------- SKILLS STEP ----------
+  function renderSkillsStep(skills) {
+    const techSkills = skills.technical || [];
+    const softSkills = skills.soft || [];
+    const languages = skills.languages || [];
 
-        return `
+    return `
       <div class="section-title">Skills</div>
       <div class="section-subtitle">Your technical skills, soft skills, and languages</div>
 
@@ -514,11 +514,11 @@ export function renderBuilderPage() {
         </div>
       </div>
     `;
-    }
+  }
 
-    // ---------- PROJECTS STEP ----------
-    function renderProjectsStep(projects) {
-        return `
+  // ---------- PROJECTS STEP ----------
+  function renderProjectsStep(projects) {
+    return `
       <div class="flex justify-between items-center mb-4">
         <div>
           <div class="section-title">Projects</div>
@@ -579,11 +579,11 @@ export function renderBuilderPage() {
         `).join('')}
       </div>
     `;
-    }
+  }
 
-    // ---------- CERTIFICATIONS STEP ----------
-    function renderCertsStep(certs) {
-        return `
+  // ---------- CERTIFICATIONS STEP ----------
+  function renderCertsStep(certs) {
+    return `
       <div class="flex justify-between items-center mb-4">
         <div>
           <div class="section-title">Certifications</div>
@@ -631,11 +631,11 @@ export function renderBuilderPage() {
         `).join('')}
       </div>
     `;
-    }
+  }
 
-    // ---------- SUMMARY STEP ----------
-    function renderSummaryStep(summary, experience, skills) {
-        return `
+  // ---------- SUMMARY STEP ----------
+  function renderSummaryStep(summary, experience, skills) {
+    return `
       <div class="section-title">Professional Summary</div>
       <div class="section-subtitle">A compelling overview of your expertise. AI can generate options for you.</div>
 
@@ -658,15 +658,15 @@ export function renderBuilderPage() {
         </div>
       ` : ''}
     `;
-    }
+  }
 
-    // ---------- REVIEW STEP ----------
-    function renderReviewStep(resume) {
-        const contact = resume.contact;
-        const techSkills = (resume.skills?.technical || []).map(s => s.name).filter(Boolean);
-        const softSkills = (resume.skills?.soft || []).map(s => s.name).filter(Boolean);
+  // ---------- REVIEW STEP ----------
+  function renderReviewStep(resume) {
+    const contact = resume.contact;
+    const techSkills = (resume.skills?.technical || []).map(s => s.name).filter(Boolean);
+    const softSkills = (resume.skills?.soft || []).map(s => s.name).filter(Boolean);
 
-        return `
+    return `
       <div class="section-title">Review & Download</div>
       <div class="section-subtitle">Review your master resume before downloading</div>
 
@@ -735,600 +735,600 @@ export function renderBuilderPage() {
         </p>
       </div>
     `;
+  }
+
+  // ========== EVENT HANDLERS ==========
+
+  function saveCurrentStep() {
+    const resume = store.getResume();
+
+    switch (STEPS[currentStep].id) {
+      case 'contact':
+        store.updateContact({
+          fullName: page.querySelector('#contact-name')?.value || '',
+          email: page.querySelector('#contact-email')?.value || '',
+          phone: page.querySelector('#contact-phone')?.value || '',
+          location: page.querySelector('#contact-location')?.value || '',
+          linkedin: page.querySelector('#contact-linkedin')?.value || '',
+          github: page.querySelector('#contact-github')?.value || '',
+          portfolio: page.querySelector('#contact-portfolio')?.value || '',
+        });
+        break;
+
+      case 'experience':
+        saveExperienceEntries();
+        break;
+
+      case 'education':
+        saveEducationEntries();
+        break;
+
+      case 'skills':
+        // Skills are saved on tag add/remove already
+        break;
+
+      case 'projects':
+        saveProjectEntries();
+        break;
+
+      case 'certs':
+        saveCertEntries();
+        break;
+
+      case 'summary':
+        store.updateSummary({
+          text: page.querySelector('#summary-text')?.value || '',
+        });
+        break;
     }
+  }
 
-    // ========== EVENT HANDLERS ==========
-
-    function saveCurrentStep() {
-        const resume = store.getResume();
-
-        switch (STEPS[currentStep].id) {
-            case 'contact':
-                store.updateContact({
-                    fullName: page.querySelector('#contact-name')?.value || '',
-                    email: page.querySelector('#contact-email')?.value || '',
-                    phone: page.querySelector('#contact-phone')?.value || '',
-                    location: page.querySelector('#contact-location')?.value || '',
-                    linkedin: page.querySelector('#contact-linkedin')?.value || '',
-                    github: page.querySelector('#contact-github')?.value || '',
-                    portfolio: page.querySelector('#contact-portfolio')?.value || '',
-                });
-                break;
-
-            case 'experience':
-                saveExperienceEntries();
-                break;
-
-            case 'education':
-                saveEducationEntries();
-                break;
-
-            case 'skills':
-                // Skills are saved on tag add/remove already
-                break;
-
-            case 'projects':
-                saveProjectEntries();
-                break;
-
-            case 'certs':
-                saveCertEntries();
-                break;
-
-            case 'summary':
-                store.updateSummary({
-                    text: page.querySelector('#summary-text')?.value || '',
-                });
-                break;
+  function saveExperienceEntries() {
+    const entries = page.querySelectorAll('[data-exp-id]');
+    const experience = [];
+    entries.forEach(el => {
+      const id = el.dataset.expId;
+      const fields = {};
+      el.querySelectorAll('.exp-field').forEach(f => {
+        fields[f.dataset.field] = f.value;
+      });
+      const current = el.querySelector('.exp-current')?.checked || false;
+      const bullets = [];
+      el.querySelectorAll('.bullet-text').forEach(t => {
+        if (t.value.trim()) {
+          bullets.push({ id: crypto.randomUUID(), text: t.value.trim(), tags: [], metrics: [] });
         }
-    }
+      });
+      experience.push({ id, ...fields, current, bullets, skills: [] });
+    });
+    store.updateSection('experience', experience);
+  }
 
-    function saveExperienceEntries() {
-        const entries = page.querySelectorAll('[data-exp-id]');
-        const experience = [];
-        entries.forEach(el => {
-            const id = el.dataset.expId;
-            const fields = {};
-            el.querySelectorAll('.exp-field').forEach(f => {
-                fields[f.dataset.field] = f.value;
-            });
-            const current = el.querySelector('.exp-current')?.checked || false;
-            const bullets = [];
-            el.querySelectorAll('.bullet-text').forEach(t => {
-                if (t.value.trim()) {
-                    bullets.push({ id: crypto.randomUUID(), text: t.value.trim(), tags: [], metrics: [] });
-                }
-            });
-            experience.push({ id, ...fields, current, bullets, skills: [] });
-        });
-        store.updateSection('experience', experience);
-    }
+  function saveEducationEntries() {
+    const entries = page.querySelectorAll('[data-edu-id]');
+    const education = [];
+    entries.forEach(el => {
+      const id = el.dataset.eduId;
+      const fields = {};
+      el.querySelectorAll('.edu-field').forEach(f => {
+        fields[f.dataset.field] = f.value;
+      });
+      education.push({ id, ...fields });
+    });
+    store.updateSection('education', education);
+  }
 
-    function saveEducationEntries() {
-        const entries = page.querySelectorAll('[data-edu-id]');
-        const education = [];
-        entries.forEach(el => {
-            const id = el.dataset.eduId;
-            const fields = {};
-            el.querySelectorAll('.edu-field').forEach(f => {
-                fields[f.dataset.field] = f.value;
-            });
-            education.push({ id, ...fields });
-        });
-        store.updateSection('education', education);
-    }
-
-    function saveProjectEntries() {
-        const entries = page.querySelectorAll('[data-proj-id]');
-        const projects = [];
-        entries.forEach(el => {
-            const id = el.dataset.projId;
-            const fields = {};
-            el.querySelectorAll('.proj-field').forEach(f => {
-                if (f.dataset.field === 'technologies') {
-                    fields.technologies = f.value.split(',').map(t => t.trim()).filter(Boolean);
-                } else {
-                    fields[f.dataset.field] = f.tagName === 'TEXTAREA' ? f.value : f.value;
-                }
-            });
-            const bullets = [];
-            el.querySelectorAll('.bullet-text').forEach(t => {
-                if (t.value.trim()) bullets.push({ id: crypto.randomUUID(), text: t.value.trim() });
-            });
-            projects.push({ id, ...fields, bullets });
-        });
-        store.updateSection('projects', projects);
-    }
-
-    function saveCertEntries() {
-        const entries = page.querySelectorAll('[data-cert-id]');
-        const certs = [];
-        entries.forEach(el => {
-            const id = el.dataset.certId;
-            const fields = {};
-            el.querySelectorAll('.cert-field').forEach(f => {
-                fields[f.dataset.field] = f.value;
-            });
-            certs.push({ id, ...fields });
-        });
-        store.updateSection('certifications', certs);
-    }
-
-    function attachNavEvents() {
-        page.querySelector('#wizard-prev')?.addEventListener('click', () => {
-            saveCurrentStep();
-            currentStep--;
-            render();
-        });
-        page.querySelector('#wizard-next')?.addEventListener('click', () => {
-            saveCurrentStep();
-            currentStep++;
-            render();
-        });
-        page.querySelector('#wizard-download')?.addEventListener('click', () => {
-            saveCurrentStep();
-            const resume = store.getResume();
-            downloadJSON(resume, `master-resume-${Date.now()}.json`);
-            showToast('Master resume downloaded!', 'success');
-        });
-
-        // Step click navigation
-        page.querySelectorAll('.wizard-step').forEach(el => {
-            el.addEventListener('click', () => {
-                saveCurrentStep();
-                currentStep = parseInt(el.dataset.step);
-                render();
-            });
-        });
-    }
-
-    function attachStepEvents(step) {
-        switch (STEPS[step].id) {
-            case 'import': attachImportEvents(); break;
-            case 'experience': attachExperienceEvents(); break;
-            case 'education': attachEducationEvents(); break;
-            case 'skills': attachSkillsEvents(); break;
-            case 'projects': attachProjectsEvents(); break;
-            case 'certs': attachCertsEvents(); break;
-            case 'summary': attachSummaryEvents(); break;
+  function saveProjectEntries() {
+    const entries = page.querySelectorAll('[data-proj-id]');
+    const projects = [];
+    entries.forEach(el => {
+      const id = el.dataset.projId;
+      const fields = {};
+      el.querySelectorAll('.proj-field').forEach(f => {
+        if (f.dataset.field === 'technologies') {
+          fields.technologies = f.value.split(',').map(t => t.trim()).filter(Boolean);
+        } else {
+          fields[f.dataset.field] = f.tagName === 'TEXTAREA' ? f.value : f.value;
         }
+      });
+      const bullets = [];
+      el.querySelectorAll('.bullet-text').forEach(t => {
+        if (t.value.trim()) bullets.push({ id: crypto.randomUUID(), text: t.value.trim() });
+      });
+      projects.push({ id, ...fields, bullets });
+    });
+    store.updateSection('projects', projects);
+  }
+
+  function saveCertEntries() {
+    const entries = page.querySelectorAll('[data-cert-id]');
+    const certs = [];
+    entries.forEach(el => {
+      const id = el.dataset.certId;
+      const fields = {};
+      el.querySelectorAll('.cert-field').forEach(f => {
+        fields[f.dataset.field] = f.value;
+      });
+      certs.push({ id, ...fields });
+    });
+    store.updateSection('certifications', certs);
+  }
+
+  function attachNavEvents() {
+    page.querySelector('#wizard-prev')?.addEventListener('click', () => {
+      saveCurrentStep();
+      currentStep--;
+      render();
+    });
+    page.querySelector('#wizard-next')?.addEventListener('click', () => {
+      saveCurrentStep();
+      currentStep++;
+      render();
+    });
+    page.querySelector('#wizard-download')?.addEventListener('click', () => {
+      saveCurrentStep();
+      const resume = store.getResume();
+      downloadJSON(resume, `master-resume-${Date.now()}.json`);
+      showToast('Master resume downloaded!', 'success');
+    });
+
+    // Step click navigation
+    page.querySelectorAll('.wizard-step').forEach(el => {
+      el.addEventListener('click', () => {
+        saveCurrentStep();
+        currentStep = parseInt(el.dataset.step);
+        render();
+      });
+    });
+  }
+
+  function attachStepEvents(step) {
+    switch (STEPS[step].id) {
+      case 'import': attachImportEvents(); break;
+      case 'experience': attachExperienceEvents(); break;
+      case 'education': attachEducationEvents(); break;
+      case 'skills': attachSkillsEvents(); break;
+      case 'projects': attachProjectsEvents(); break;
+      case 'certs': attachCertsEvents(); break;
+      case 'summary': attachSummaryEvents(); break;
+    }
+  }
+
+  // Import events
+  function attachImportEvents() {
+    const statusEl = page.querySelector('#import-status');
+    const fileInputResume = page.querySelector('#file-input-resume');
+    const fileInputLinkedin = page.querySelector('#file-input-linkedin');
+    const fileInputJson = page.querySelector('#file-input-json');
+
+    page.querySelector('#import-resume')?.addEventListener('click', () => fileInputResume.click());
+    page.querySelector('#import-linkedin')?.addEventListener('click', () => fileInputLinkedin.click());
+    page.querySelector('#import-json')?.addEventListener('click', () => fileInputJson.click());
+
+    page.querySelector('#import-text')?.addEventListener('click', () => {
+      page.querySelector('#import-text-area').classList.toggle('hidden');
+    });
+
+    // Resume upload
+    fileInputResume.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      statusEl.innerHTML = '<div class="spinner" style="display:inline-block;vertical-align:middle;margin-right:8px;"></div> Extracting text from your resume...';
+
+      try {
+        const text = await extractTextFromFile(file);
+        statusEl.textContent = 'Text extracted! Processing with AI...';
+
+        if (isConfigured()) {
+          const data = await parseTextToResume(text);
+          mergeImportedData(data);
+          statusEl.innerHTML = '<span style="color:var(--color-success);">✓ Resume imported and processed! Navigate to the next steps to review.</span>';
+        } else {
+          statusEl.innerHTML = '<span style="color:var(--color-warning);">Text extracted but AI is not configured. Please configure AI to auto-populate sections, or continue manually.</span>';
+        }
+      } catch (err) {
+        statusEl.innerHTML = `<span style="color:var(--color-error);">Error: ${err.message}</span>`;
+      }
+    });
+
+    // LinkedIn upload
+    fileInputLinkedin.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      statusEl.innerHTML = '<div class="spinner" style="display:inline-block;vertical-align:middle;margin-right:8px;"></div> Extracting data from LinkedIn Profile PDF...';
+
+      try {
+        const data = await parseLinkedInExport(file);
+        mergeImportedData(data);
+        statusEl.innerHTML = '<span style="color:var(--color-success);">✓ LinkedIn Profile imported! Navigate to the next steps to review.</span>';
+      } catch (err) {
+        statusEl.innerHTML = `<span style="color:var(--color-error);">Error: ${err.message}</span>`;
+      }
+    });
+
+    // JSON upload
+    fileInputJson.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        store.importResume(data);
+        statusEl.innerHTML = '<span style="color:var(--color-success);">✓ Master resume JSON imported!</span>';
+        showToast('Master resume imported!', 'success');
+      } catch (err) {
+        statusEl.innerHTML = `<span style="color:var(--color-error);">Error: Invalid JSON file</span>`;
+      }
+    });
+
+    // Plain text process
+    page.querySelector('#import-text-process')?.addEventListener('click', async () => {
+      const text = page.querySelector('#import-text-input')?.value;
+      if (!text?.trim()) return showToast('Please paste some text first', 'warning');
+      if (!isConfigured()) return showToast('Please configure AI first', 'warning');
+
+      statusEl.innerHTML = '<div class="spinner" style="display:inline-block;vertical-align:middle;margin-right:8px;"></div> AI is processing your text...';
+
+      try {
+        const data = await parseTextToResume(text);
+        mergeImportedData(data);
+        statusEl.innerHTML = '<span style="color:var(--color-success);">✓ Text processed! Navigate to the next steps to review.</span>';
+      } catch (err) {
+        statusEl.innerHTML = `<span style="color:var(--color-error);">Error: ${err.message}</span>`;
+      }
+    });
+  }
+
+  function mergeImportedData(data) {
+    const resume = store.getResume();
+
+    if (data.contact) {
+      const merged = { ...resume.contact };
+      Object.entries(data.contact).forEach(([k, v]) => {
+        if (v && !merged[k]) merged[k] = v;
+      });
+      store.updateContact(merged);
     }
 
-    // Import events
-    function attachImportEvents() {
-        const statusEl = page.querySelector('#import-status');
-        const fileInputResume = page.querySelector('#file-input-resume');
-        const fileInputLinkedin = page.querySelector('#file-input-linkedin');
-        const fileInputJson = page.querySelector('#file-input-json');
+    if (data.summary?.text && !resume.summary.text) {
+      store.updateSummary(data.summary);
+    }
 
-        page.querySelector('#import-resume')?.addEventListener('click', () => fileInputResume.click());
-        page.querySelector('#import-linkedin')?.addEventListener('click', () => fileInputLinkedin.click());
-        page.querySelector('#import-json')?.addEventListener('click', () => fileInputJson.click());
-
-        page.querySelector('#import-text')?.addEventListener('click', () => {
-            page.querySelector('#import-text-area').classList.toggle('hidden');
+    if (data.experience?.length) {
+      const existing = resume.experience;
+      data.experience.forEach(e => {
+        if (!e.id) e.id = crypto.randomUUID();
+        e.bullets = (e.bullets || []).map(b => {
+          if (typeof b === 'string') return { id: crypto.randomUUID(), text: b, tags: [], metrics: [] };
+          if (!b.id) b.id = crypto.randomUUID();
+          return b;
         });
+        existing.push(e);
+      });
+      store.updateSection('experience', existing);
+    }
 
-        // Resume upload
-        fileInputResume.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            statusEl.innerHTML = '<div class="spinner" style="display:inline-block;vertical-align:middle;margin-right:8px;"></div> Extracting text from your resume...';
+    if (data.education?.length) {
+      const existing = resume.education;
+      data.education.forEach(e => {
+        if (!e.id) e.id = crypto.randomUUID();
+        existing.push(e);
+      });
+      store.updateSection('education', existing);
+    }
 
-            try {
-                const text = await extractTextFromFile(file);
-                statusEl.textContent = 'Text extracted! Processing with AI...';
-
-                if (isConfigured()) {
-                    const data = await parseTextToResume(text);
-                    mergeImportedData(data);
-                    statusEl.innerHTML = '<span style="color:var(--color-success);">✓ Resume imported and processed! Navigate to the next steps to review.</span>';
-                } else {
-                    statusEl.innerHTML = '<span style="color:var(--color-warning);">Text extracted but AI is not configured. Please configure AI to auto-populate sections, or continue manually.</span>';
-                }
-            } catch (err) {
-                statusEl.innerHTML = `<span style="color:var(--color-error);">Error: ${err.message}</span>`;
+    if (data.skills) {
+      const existing = resume.skills;
+      ['technical', 'soft', 'languages'].forEach(type => {
+        if (data.skills[type]?.length) {
+          const names = new Set((existing[type] || []).map(s => s.name.toLowerCase()));
+          data.skills[type].forEach(s => {
+            if (typeof s === 'string') s = { name: s, proficiency: 'intermediate', category: 'general' };
+            if (!s.id) s.id = crypto.randomUUID();
+            if (!names.has(s.name.toLowerCase())) {
+              existing[type] = existing[type] || [];
+              existing[type].push(s);
             }
-        });
-
-        // LinkedIn upload
-        fileInputLinkedin.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            statusEl.innerHTML = '<div class="spinner" style="display:inline-block;vertical-align:middle;margin-right:8px;"></div> Processing LinkedIn data...';
-
-            try {
-                const data = await parseLinkedInExport(file);
-                mergeImportedData(data);
-                statusEl.innerHTML = '<span style="color:var(--color-success);">✓ LinkedIn data imported! Navigate to the next steps to review.</span>';
-            } catch (err) {
-                statusEl.innerHTML = `<span style="color:var(--color-error);">Error: ${err.message}</span>`;
-            }
-        });
-
-        // JSON upload
-        fileInputJson.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            try {
-                const text = await file.text();
-                const data = JSON.parse(text);
-                store.importResume(data);
-                statusEl.innerHTML = '<span style="color:var(--color-success);">✓ Master resume JSON imported!</span>';
-                showToast('Master resume imported!', 'success');
-            } catch (err) {
-                statusEl.innerHTML = `<span style="color:var(--color-error);">Error: Invalid JSON file</span>`;
-            }
-        });
-
-        // Plain text process
-        page.querySelector('#import-text-process')?.addEventListener('click', async () => {
-            const text = page.querySelector('#import-text-input')?.value;
-            if (!text?.trim()) return showToast('Please paste some text first', 'warning');
-            if (!isConfigured()) return showToast('Please configure AI first', 'warning');
-
-            statusEl.innerHTML = '<div class="spinner" style="display:inline-block;vertical-align:middle;margin-right:8px;"></div> AI is processing your text...';
-
-            try {
-                const data = await parseTextToResume(text);
-                mergeImportedData(data);
-                statusEl.innerHTML = '<span style="color:var(--color-success);">✓ Text processed! Navigate to the next steps to review.</span>';
-            } catch (err) {
-                statusEl.innerHTML = `<span style="color:var(--color-error);">Error: ${err.message}</span>`;
-            }
-        });
+          });
+        }
+      });
+      store.updateSection('skills', existing);
     }
 
-    function mergeImportedData(data) {
-        const resume = store.getResume();
-
-        if (data.contact) {
-            const merged = { ...resume.contact };
-            Object.entries(data.contact).forEach(([k, v]) => {
-                if (v && !merged[k]) merged[k] = v;
-            });
-            store.updateContact(merged);
-        }
-
-        if (data.summary?.text && !resume.summary.text) {
-            store.updateSummary(data.summary);
-        }
-
-        if (data.experience?.length) {
-            const existing = resume.experience;
-            data.experience.forEach(e => {
-                if (!e.id) e.id = crypto.randomUUID();
-                e.bullets = (e.bullets || []).map(b => {
-                    if (typeof b === 'string') return { id: crypto.randomUUID(), text: b, tags: [], metrics: [] };
-                    if (!b.id) b.id = crypto.randomUUID();
-                    return b;
-                });
-                existing.push(e);
-            });
-            store.updateSection('experience', existing);
-        }
-
-        if (data.education?.length) {
-            const existing = resume.education;
-            data.education.forEach(e => {
-                if (!e.id) e.id = crypto.randomUUID();
-                existing.push(e);
-            });
-            store.updateSection('education', existing);
-        }
-
-        if (data.skills) {
-            const existing = resume.skills;
-            ['technical', 'soft', 'languages'].forEach(type => {
-                if (data.skills[type]?.length) {
-                    const names = new Set((existing[type] || []).map(s => s.name.toLowerCase()));
-                    data.skills[type].forEach(s => {
-                        if (typeof s === 'string') s = { name: s, proficiency: 'intermediate', category: 'general' };
-                        if (!s.id) s.id = crypto.randomUUID();
-                        if (!names.has(s.name.toLowerCase())) {
-                            existing[type] = existing[type] || [];
-                            existing[type].push(s);
-                        }
-                    });
-                }
-            });
-            store.updateSection('skills', existing);
-        }
-
-        if (data.certifications?.length) {
-            const existing = resume.certifications;
-            data.certifications.forEach(c => {
-                if (!c.id) c.id = crypto.randomUUID();
-                existing.push(c);
-            });
-            store.updateSection('certifications', existing);
-        }
-
-        if (data.projects?.length) {
-            const existing = resume.projects;
-            data.projects.forEach(p => {
-                if (!p.id) p.id = crypto.randomUUID();
-                existing.push(p);
-            });
-            store.updateSection('projects', existing);
-        }
-
-        showToast('Data imported and merged!', 'success');
+    if (data.certifications?.length) {
+      const existing = resume.certifications;
+      data.certifications.forEach(c => {
+        if (!c.id) c.id = crypto.randomUUID();
+        existing.push(c);
+      });
+      store.updateSection('certifications', existing);
     }
 
-    // Experience events
-    function attachExperienceEvents() {
-        page.querySelector('#add-experience')?.addEventListener('click', () => {
-            saveExperienceEntries();
-            store.addExperience(createExperienceEntry());
+    if (data.projects?.length) {
+      const existing = resume.projects;
+      data.projects.forEach(p => {
+        if (!p.id) p.id = crypto.randomUUID();
+        existing.push(p);
+      });
+      store.updateSection('projects', existing);
+    }
+
+    showToast('Data imported and merged!', 'success');
+  }
+
+  // Experience events
+  function attachExperienceEvents() {
+    page.querySelector('#add-experience')?.addEventListener('click', () => {
+      saveExperienceEntries();
+      store.addExperience(createExperienceEntry());
+      render();
+    });
+
+    page.querySelectorAll('.exp-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const card = btn.closest('[data-exp-id]');
+        const id = card.dataset.expId;
+        store.removeExperience(id);
+        render();
+      });
+    });
+
+    page.querySelectorAll('.exp-add-bullet').forEach(btn => {
+      btn.addEventListener('click', () => {
+        saveExperienceEntries();
+        const card = btn.closest('[data-exp-id]');
+        const id = card.dataset.expId;
+        const exp = store.getResume().experience.find(e => e.id === id);
+        if (exp) {
+          exp.bullets.push(createBulletPoint());
+          store.updateExperience(id, { bullets: exp.bullets });
+          render();
+        }
+      });
+    });
+
+    // Individual bullet enhance
+    page.querySelectorAll('.bullet-enhance').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const bulletRow = btn.closest('.bullet-row');
+        const textarea = bulletRow.querySelector('.bullet-text');
+        if (!textarea.value.trim()) return;
+
+        btn.disabled = true;
+        btn.textContent = '⏳';
+        try {
+          const enhanced = await enhanceBulletPoint(textarea.value);
+          textarea.value = enhanced;
+          showToast('Bullet point enhanced!', 'success');
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+        btn.disabled = false;
+        btn.textContent = '✦';
+      });
+    });
+
+    // Enhance all bullets in an entry
+    page.querySelectorAll('.exp-enhance-all').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const card = btn.closest('[data-exp-id]');
+        const textareas = card.querySelectorAll('.bullet-text');
+        btn.disabled = true;
+        btn.textContent = '⏳ Enhancing...';
+
+        for (const ta of textareas) {
+          if (ta.value.trim()) {
+            try {
+              ta.value = await enhanceBulletPoint(ta.value);
+            } catch { /* skip */ }
+          }
+        }
+
+        btn.disabled = false;
+        btn.textContent = '✦ Enhance All';
+        showToast('All bullet points enhanced!', 'success');
+      });
+    });
+
+    // Current checkbox
+    page.querySelectorAll('.exp-current').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const card = cb.closest('[data-exp-id]');
+        const endDateInput = card.querySelector('[data-field="endDate"]');
+        endDateInput.disabled = cb.checked;
+        if (cb.checked) endDateInput.value = '';
+      });
+    });
+  }
+
+  // Education events
+  function attachEducationEvents() {
+    page.querySelector('#add-education')?.addEventListener('click', () => {
+      saveEducationEntries();
+      store.addEducation(createEducationEntry());
+      render();
+    });
+
+    page.querySelectorAll('.edu-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.closest('[data-edu-id]').dataset.eduId;
+        store.removeEducation(id);
+        render();
+      });
+    });
+  }
+
+  // Skills events
+  function attachSkillsEvents() {
+    function addSkillTag(type, inputId, containerId) {
+      const input = page.querySelector(`#${inputId}`);
+      const container = page.querySelector(`#${containerId}`);
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && input.value.trim()) {
+          e.preventDefault();
+          const name = input.value.trim();
+          const skills = store.getResume().skills;
+          const existing = (skills[type] || []).map(s => s.name.toLowerCase());
+          if (!existing.includes(name.toLowerCase())) {
+            store.addSkill(type, createSkillEntry(name));
             render();
-        });
-
-        page.querySelectorAll('.exp-remove').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const card = btn.closest('[data-exp-id]');
-                const id = card.dataset.expId;
-                store.removeExperience(id);
-                render();
-            });
-        });
-
-        page.querySelectorAll('.exp-add-bullet').forEach(btn => {
-            btn.addEventListener('click', () => {
-                saveExperienceEntries();
-                const card = btn.closest('[data-exp-id]');
-                const id = card.dataset.expId;
-                const exp = store.getResume().experience.find(e => e.id === id);
-                if (exp) {
-                    exp.bullets.push(createBulletPoint());
-                    store.updateExperience(id, { bullets: exp.bullets });
-                    render();
-                }
-            });
-        });
-
-        // Individual bullet enhance
-        page.querySelectorAll('.bullet-enhance').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const bulletRow = btn.closest('.bullet-row');
-                const textarea = bulletRow.querySelector('.bullet-text');
-                if (!textarea.value.trim()) return;
-
-                btn.disabled = true;
-                btn.textContent = '⏳';
-                try {
-                    const enhanced = await enhanceBulletPoint(textarea.value);
-                    textarea.value = enhanced;
-                    showToast('Bullet point enhanced!', 'success');
-                } catch (err) {
-                    showToast(err.message, 'error');
-                }
-                btn.disabled = false;
-                btn.textContent = '✦';
-            });
-        });
-
-        // Enhance all bullets in an entry
-        page.querySelectorAll('.exp-enhance-all').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const card = btn.closest('[data-exp-id]');
-                const textareas = card.querySelectorAll('.bullet-text');
-                btn.disabled = true;
-                btn.textContent = '⏳ Enhancing...';
-
-                for (const ta of textareas) {
-                    if (ta.value.trim()) {
-                        try {
-                            ta.value = await enhanceBulletPoint(ta.value);
-                        } catch { /* skip */ }
-                    }
-                }
-
-                btn.disabled = false;
-                btn.textContent = '✦ Enhance All';
-                showToast('All bullet points enhanced!', 'success');
-            });
-        });
-
-        // Current checkbox
-        page.querySelectorAll('.exp-current').forEach(cb => {
-            cb.addEventListener('change', () => {
-                const card = cb.closest('[data-exp-id]');
-                const endDateInput = card.querySelector('[data-field="endDate"]');
-                endDateInput.disabled = cb.checked;
-                if (cb.checked) endDateInput.value = '';
-            });
-        });
-    }
-
-    // Education events
-    function attachEducationEvents() {
-        page.querySelector('#add-education')?.addEventListener('click', () => {
-            saveEducationEntries();
-            store.addEducation(createEducationEntry());
-            render();
-        });
-
-        page.querySelectorAll('.edu-remove').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const id = btn.closest('[data-edu-id]').dataset.eduId;
-                store.removeEducation(id);
-                render();
-            });
-        });
-    }
-
-    // Skills events
-    function attachSkillsEvents() {
-        function addSkillTag(type, inputId, containerId) {
-            const input = page.querySelector(`#${inputId}`);
-            const container = page.querySelector(`#${containerId}`);
-
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && input.value.trim()) {
-                    e.preventDefault();
-                    const name = input.value.trim();
-                    const skills = store.getResume().skills;
-                    const existing = (skills[type] || []).map(s => s.name.toLowerCase());
-                    if (!existing.includes(name.toLowerCase())) {
-                        store.addSkill(type, createSkillEntry(name));
-                        render();
-                    }
-                    input.value = '';
-                }
-            });
-
-            // Click on container focuses input
-            container.addEventListener('click', () => input.focus());
+          }
+          input.value = '';
         }
+      });
 
-        addSkillTag('technical', 'tech-skill-input', 'tech-skills-container');
-        addSkillTag('soft', 'soft-skill-input', 'soft-skills-container');
-        addSkillTag('languages', 'lang-skill-input', 'lang-skills-container');
+      // Click on container focuses input
+      container.addEventListener('click', () => input.focus());
+    }
 
-        // Remove tags
-        page.querySelectorAll('.tag-remove').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const type = btn.dataset.skillType;
-                const name = btn.dataset.skillName;
-                const skills = store.getResume().skills[type].filter(s => s.name !== name);
-                store.updateSkills(type, skills);
-                render();
-            });
-        });
+    addSkillTag('technical', 'tech-skill-input', 'tech-skills-container');
+    addSkillTag('soft', 'soft-skill-input', 'soft-skills-container');
+    addSkillTag('languages', 'lang-skill-input', 'lang-skills-container');
 
-        // AI suggest
-        page.querySelector('#ai-suggest-skills')?.addEventListener('click', async () => {
-            const btn = page.querySelector('#ai-suggest-skills');
-            const techSkills = store.getResume().skills.technical || [];
-            if (!techSkills.length) return showToast('Add some skills first for suggestions', 'warning');
+    // Remove tags
+    page.querySelectorAll('.tag-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.dataset.skillType;
+        const name = btn.dataset.skillName;
+        const skills = store.getResume().skills[type].filter(s => s.name !== name);
+        store.updateSkills(type, skills);
+        render();
+      });
+    });
 
-            btn.disabled = true;
-            btn.textContent = '⏳ Suggesting...';
+    // AI suggest
+    page.querySelector('#ai-suggest-skills')?.addEventListener('click', async () => {
+      const btn = page.querySelector('#ai-suggest-skills');
+      const techSkills = store.getResume().skills.technical || [];
+      if (!techSkills.length) return showToast('Add some skills first for suggestions', 'warning');
 
-            try {
-                const suggestions = await suggestSkills(techSkills);
-                const suggestionsDiv = page.querySelector('#skill-suggestions');
-                const existingNames = techSkills.map(s => s.name.toLowerCase());
+      btn.disabled = true;
+      btn.textContent = '⏳ Suggesting...';
 
-                const filtered = suggestions.filter(s => !existingNames.includes(s.toLowerCase()));
+      try {
+        const suggestions = await suggestSkills(techSkills);
+        const suggestionsDiv = page.querySelector('#skill-suggestions');
+        const existingNames = techSkills.map(s => s.name.toLowerCase());
 
-                if (filtered.length > 0) {
-                    suggestionsDiv.innerHTML = `
+        const filtered = suggestions.filter(s => !existingNames.includes(s.toLowerCase()));
+
+        if (filtered.length > 0) {
+          suggestionsDiv.innerHTML = `
             <span class="suggestion-label">✦ Suggestions:</span>
             ${filtered.map(s => `<span class="tag tag-suggestion" data-suggest="${s}">+ ${s}</span>`).join('')}
           `;
 
-                    suggestionsDiv.querySelectorAll('.tag-suggestion').forEach(tag => {
-                        tag.addEventListener('click', () => {
-                            store.addSkill('technical', createSkillEntry(tag.dataset.suggest));
-                            tag.remove();
-                            render();
-                        });
-                    });
-                } else {
-                    suggestionsDiv.innerHTML = '<span class="form-hint">No new suggestions found.</span>';
-                }
-            } catch (err) {
-                showToast(err.message, 'error');
-            }
-
-            btn.disabled = false;
-            btn.textContent = '✦ AI Suggest';
-        });
-    }
-
-    // Projects events
-    function attachProjectsEvents() {
-        page.querySelector('#add-project')?.addEventListener('click', () => {
-            saveProjectEntries();
-            store.addProject(createProjectEntry());
-            render();
-        });
-
-        page.querySelectorAll('.proj-remove').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const id = btn.closest('[data-proj-id]').dataset.projId;
-                store.removeProject(id);
-                render();
+          suggestionsDiv.querySelectorAll('.tag-suggestion').forEach(tag => {
+            tag.addEventListener('click', () => {
+              store.addSkill('technical', createSkillEntry(tag.dataset.suggest));
+              tag.remove();
+              render();
             });
-        });
+          });
+        } else {
+          suggestionsDiv.innerHTML = '<span class="form-hint">No new suggestions found.</span>';
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
 
-        page.querySelectorAll('.proj-add-bullet').forEach(btn => {
-            btn.addEventListener('click', () => {
-                saveProjectEntries();
-                const card = btn.closest('[data-proj-id]');
-                const id = card.dataset.projId;
-                const proj = store.getResume().projects.find(p => p.id === id);
-                if (proj) {
-                    proj.bullets = proj.bullets || [];
-                    proj.bullets.push({ id: crypto.randomUUID(), text: '' });
-                    store.updateProject(id, { bullets: proj.bullets });
-                    render();
-                }
-            });
-        });
-    }
+      btn.disabled = false;
+      btn.textContent = '✦ AI Suggest';
+    });
+  }
 
-    // Certs events
-    function attachCertsEvents() {
-        page.querySelector('#add-cert')?.addEventListener('click', () => {
-            saveCertEntries();
-            store.addCertification(createCertificationEntry());
-            render();
-        });
+  // Projects events
+  function attachProjectsEvents() {
+    page.querySelector('#add-project')?.addEventListener('click', () => {
+      saveProjectEntries();
+      store.addProject(createProjectEntry());
+      render();
+    });
 
-        page.querySelectorAll('.cert-remove').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const id = btn.closest('[data-cert-id]').dataset.certId;
-                store.removeCertification(id);
-                render();
-            });
-        });
-    }
+    page.querySelectorAll('.proj-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.closest('[data-proj-id]').dataset.projId;
+        store.removeProject(id);
+        render();
+      });
+    });
 
-    // Summary events
-    function attachSummaryEvents() {
-        page.querySelector('#ai-generate-summary')?.addEventListener('click', async () => {
-            const btn = page.querySelector('#ai-generate-summary');
-            const resume = store.getResume();
+    page.querySelectorAll('.proj-add-bullet').forEach(btn => {
+      btn.addEventListener('click', () => {
+        saveProjectEntries();
+        const card = btn.closest('[data-proj-id]');
+        const id = card.dataset.projId;
+        const proj = store.getResume().projects.find(p => p.id === id);
+        if (proj) {
+          proj.bullets = proj.bullets || [];
+          proj.bullets.push({ id: crypto.randomUUID(), text: '' });
+          store.updateProject(id, { bullets: proj.bullets });
+          render();
+        }
+      });
+    });
+  }
 
-            if (!resume.experience.length && !(resume.skills.technical || []).length) {
-                return showToast('Add some experience and skills first', 'warning');
-            }
+  // Certs events
+  function attachCertsEvents() {
+    page.querySelector('#add-cert')?.addEventListener('click', () => {
+      saveCertEntries();
+      store.addCertification(createCertificationEntry());
+      render();
+    });
 
-            btn.disabled = true;
-            btn.textContent = '⏳ Generating...';
+    page.querySelectorAll('.cert-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.closest('[data-cert-id]').dataset.certId;
+        store.removeCertification(id);
+        render();
+      });
+    });
+  }
 
-            try {
-                const summary = await generateSummary(resume.experience, resume.skills);
-                const textarea = page.querySelector('#summary-text');
-                textarea.value = summary;
+  // Summary events
+  function attachSummaryEvents() {
+    page.querySelector('#ai-generate-summary')?.addEventListener('click', async () => {
+      const btn = page.querySelector('#ai-generate-summary');
+      const resume = store.getResume();
 
-                // Add to variants
-                const variants = resume.summary.variants || [];
-                variants.push(summary);
-                store.updateSummary({ text: summary, variants });
-                render();
-                showToast('Summary generated!', 'success');
-            } catch (err) {
-                showToast(err.message, 'error');
-            }
+      if (!resume.experience.length && !(resume.skills.technical || []).length) {
+        return showToast('Add some experience and skills first', 'warning');
+      }
 
-            btn.disabled = false;
-            btn.textContent = '✦ AI Generate';
-        });
+      btn.disabled = true;
+      btn.textContent = '⏳ Generating...';
 
-        page.querySelectorAll('.summary-variant').forEach(el => {
-            el.addEventListener('click', () => {
-                const idx = parseInt(el.dataset.variantIdx);
-                const variants = store.getResume().summary.variants || [];
-                const textarea = page.querySelector('#summary-text');
-                textarea.value = variants[idx] || '';
-            });
-        });
-    }
+      try {
+        const summary = await generateSummary(resume.experience, resume.skills);
+        const textarea = page.querySelector('#summary-text');
+        textarea.value = summary;
 
-    render();
-    return page;
+        // Add to variants
+        const variants = resume.summary.variants || [];
+        variants.push(summary);
+        store.updateSummary({ text: summary, variants });
+        render();
+        showToast('Summary generated!', 'success');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+
+      btn.disabled = false;
+      btn.textContent = '✦ AI Generate';
+    });
+
+    page.querySelectorAll('.summary-variant').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = parseInt(el.dataset.variantIdx);
+        const variants = store.getResume().summary.variants || [];
+        const textarea = page.querySelector('#summary-text');
+        textarea.value = variants[idx] || '';
+      });
+    });
+  }
+
+  render();
+  return page;
 }
