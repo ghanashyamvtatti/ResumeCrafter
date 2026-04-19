@@ -1,15 +1,22 @@
 /**
  * API Setup Modal — select provider, enter key, pick model.
+ * Supports local LLMs (Ollama/LM Studio/llama.cpp) with base URL config.
  */
 import { getProviders, listModels } from '../services/llm-service.js';
 import { store } from '../store/resume-store.js';
 import { showToast } from '../utils/toast.js';
+
+const LOCAL_PROVIDERS = ['local'];
+const DEFAULT_LOCAL_URLS = {
+    local: 'http://localhost:11434',
+};
 
 export function showApiSetupModal() {
     // Remove any existing modal
     document.querySelector('.modal-backdrop')?.remove();
 
     const config = store.constructor.getApiConfig() || {};
+    const isLocal = LOCAL_PROVIDERS.includes(config.provider);
 
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop';
@@ -43,10 +50,19 @@ export function showApiSetupModal() {
         </select>
       </div>
 
+      <!-- Base URL (shown only for local providers) -->
+      <div class="form-group mb-6 ${isLocal ? '' : 'hidden'}" id="base-url-group">
+        <label class="form-label">Server URL</label>
+        <input class="form-input" id="api-base-url" placeholder="http://localhost:11434" value="${config.baseUrl || ''}" />
+        <span class="form-hint" id="base-url-hint">
+          Ollama: http://localhost:11434 · LM Studio: http://localhost:1234 · llama.cpp: http://localhost:8080
+        </span>
+      </div>
+
       <div class="form-group mb-6">
-        <label class="form-label">API Key</label>
+        <label class="form-label">API Key <span id="api-key-optional" class="${isLocal ? '' : 'hidden'}" style="color: var(--text-tertiary); font-weight: normal;">(optional for local)</span></label>
         <div style="display: flex; gap: var(--space-2);">
-          <input type="password" class="form-input" id="api-key" placeholder="Enter your API key" value="${config.apiKey || ''}" style="flex: 1;" />
+          <input type="password" class="form-input" id="api-key" placeholder="${isLocal ? 'Leave empty for most local servers' : 'Enter your API key'}" value="${config.apiKey || ''}" style="flex: 1;" />
           <button class="btn btn-secondary btn-sm" id="api-toggle-visibility" title="Show/hide key" style="flex-shrink: 0;">👁</button>
         </div>
         <span class="form-hint" id="api-key-hint"></span>
@@ -65,7 +81,7 @@ export function showApiSetupModal() {
 
       <div class="flex gap-3" style="margin-top: var(--space-6);">
         <button class="btn btn-primary flex-1" id="api-save">Save Configuration</button>
-        ${config.apiKey ? '<button class="btn btn-danger btn-sm" id="api-clear">Clear</button>' : ''}
+        ${config.provider ? '<button class="btn btn-danger btn-sm" id="api-clear">Clear</button>' : ''}
       </div>
     </div>
   `;
@@ -81,6 +97,9 @@ export function showApiSetupModal() {
     const clearBtn = backdrop.querySelector('#api-clear');
     const toggleBtn = backdrop.querySelector('#api-toggle-visibility');
     const modelHint = backdrop.querySelector('#api-model-hint');
+    const baseUrlGroup = backdrop.querySelector('#base-url-group');
+    const baseUrlInput = backdrop.querySelector('#api-base-url');
+    const keyOptionalLabel = backdrop.querySelector('#api-key-optional');
 
     // Close
     backdrop.querySelector('#modal-close').addEventListener('click', () => backdrop.remove());
@@ -94,12 +113,44 @@ export function showApiSetupModal() {
         toggleBtn.textContent = keyInput.type === 'password' ? '👁' : '🔒';
     });
 
+    // Helper: check if current provider is local
+    function isLocalProvider() {
+        return LOCAL_PROVIDERS.includes(providerSelect.value);
+    }
+
+    // Update UI when provider changes
+    function updateProviderUI() {
+        const local = isLocalProvider();
+        baseUrlGroup.classList.toggle('hidden', !local);
+        keyOptionalLabel.classList.toggle('hidden', !local);
+        keyInput.placeholder = local ? 'Leave empty for most local servers' : 'Enter your API key';
+
+        // Set default base URL if switching to local and field is empty
+        if (local && !baseUrlInput.value) {
+            baseUrlInput.value = DEFAULT_LOCAL_URLS[providerSelect.value] || 'http://localhost:11434';
+        }
+
+        modelSelect.innerHTML = local
+            ? '<option value="">Click 🔄 to load models from your server...</option>'
+            : '<option value="">Enter API key to load models...</option>';
+        modelSelect.disabled = true;
+        modelHint.textContent = '';
+    }
+
     // Fetch models
     async function fetchModels() {
         const provider = providerSelect.value;
         const apiKey = keyInput.value.trim();
-        if (!provider || !apiKey) {
-            showToast('Please select a provider and enter an API key', 'warning');
+        const baseUrl = baseUrlInput.value.trim();
+
+        if (!provider) {
+            showToast('Please select a provider', 'warning');
+            return;
+        }
+
+        // For non-local providers, API key is required
+        if (!isLocalProvider() && !apiKey) {
+            showToast('Please enter an API key', 'warning');
             return;
         }
 
@@ -108,12 +159,12 @@ export function showApiSetupModal() {
         modelHint.textContent = '';
 
         try {
-            const models = await listModels(provider, apiKey);
+            const models = await listModels(provider, apiKey, baseUrl || undefined);
             modelSelect.disabled = false;
 
             if (models.length === 0) {
                 modelSelect.innerHTML = '<option value="">No models found</option>';
-                modelHint.textContent = 'No compatible models found for this API key.';
+                modelHint.textContent = 'No compatible models found.';
                 return;
             }
 
@@ -129,21 +180,23 @@ export function showApiSetupModal() {
     }
 
     fetchBtn.addEventListener('click', fetchModels);
-    providerSelect.addEventListener('change', () => {
-        modelSelect.innerHTML = '<option value="">Enter API key to load models...</option>';
-        modelSelect.disabled = true;
-        modelHint.textContent = '';
+    providerSelect.addEventListener('change', updateProviderUI);
+
+    // Auto-fetch models if key exists (non-local) or on blur for local
+    keyInput.addEventListener('blur', () => {
+        if (providerSelect.value && (keyInput.value.trim() || isLocalProvider())) {
+            fetchModels();
+        }
     });
 
-    // Auto-fetch models if key exists
-    keyInput.addEventListener('blur', () => {
-        if (providerSelect.value && keyInput.value.trim()) {
+    baseUrlInput.addEventListener('blur', () => {
+        if (isLocalProvider() && baseUrlInput.value.trim()) {
             fetchModels();
         }
     });
 
     // If config already exists, load models
-    if (config.provider && config.apiKey) {
+    if (config.provider && (config.apiKey || isLocal)) {
         fetchModels();
     }
 
@@ -152,13 +205,25 @@ export function showApiSetupModal() {
         const provider = providerSelect.value;
         const apiKey = keyInput.value.trim();
         const model = modelSelect.value;
+        const baseUrl = baseUrlInput.value.trim();
 
-        if (!provider || !apiKey || !model) {
-            showToast('Please fill in all fields', 'warning');
+        if (!provider || !model) {
+            showToast('Please select a provider and model', 'warning');
             return;
         }
 
-        store.constructor.setApiConfig({ provider, apiKey, model });
+        // API key required for non-local providers
+        if (!isLocalProvider() && !apiKey) {
+            showToast('Please enter an API key', 'warning');
+            return;
+        }
+
+        const configToSave = { provider, apiKey, model };
+        if (isLocalProvider() && baseUrl) {
+            configToSave.baseUrl = baseUrl;
+        }
+
+        store.constructor.setApiConfig(configToSave);
         showToast('AI configuration saved for this session!', 'success');
         backdrop.remove();
 

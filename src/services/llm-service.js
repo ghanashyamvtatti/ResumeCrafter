@@ -250,6 +250,77 @@ const providers = {
             return data.choices?.[0]?.message?.content || '';
         },
     },
+
+    local: {
+        name: 'Local (Ollama / LM Studio / llama.cpp)',
+        needsProxy: false,
+        defaultBaseUrl: 'http://localhost:11434',
+        isLocal: true,
+
+        headers(apiKey) {
+            const h = { 'Content-Type': 'application/json' };
+            if (apiKey) h['Authorization'] = `Bearer ${apiKey}`;
+            return h;
+        },
+
+        async listModels(apiKey, baseUrl) {
+            const base = baseUrl || this.defaultBaseUrl;
+
+            // Try OpenAI-compatible endpoint first (/v1/models)
+            // Ollama (>=0.1.24), LM Studio, and llama.cpp all support this
+            try {
+                const res = await fetch(`${base}/v1/models`, { headers: this.headers(apiKey) });
+                if (res.ok) {
+                    const data = await res.json();
+                    return (data.data || [])
+                        .map(m => ({ id: m.id, name: m.id }))
+                        .sort((a, b) => a.name.localeCompare(b.name));
+                }
+            } catch { /* fall through to Ollama-native endpoint */ }
+
+            // Fallback: Ollama's native /api/tags endpoint
+            try {
+                const res = await fetch(`${base}/api/tags`, { headers: this.headers(apiKey) });
+                if (res.ok) {
+                    const data = await res.json();
+                    return (data.models || [])
+                        .map(m => ({ id: m.name || m.model, name: m.name || m.model }))
+                        .sort((a, b) => a.name.localeCompare(b.name));
+                }
+            } catch { /* fall through */ }
+
+            throw new Error(`Could not connect to local LLM at ${base}. Make sure your server is running and CORS is enabled.`);
+        },
+
+        async chat(apiKey, model, messages, options = {}, baseUrl) {
+            const base = baseUrl || this.defaultBaseUrl;
+
+            const body = {
+                model,
+                messages: messages.map(m => ({ role: m.role, content: m.content })),
+            };
+
+            // Some local servers don't support max_tokens
+            if (options.maxTokens) body.max_tokens = options.maxTokens;
+            if (options.temperature !== undefined) body.temperature = options.temperature;
+            // Disable streaming for simplicity
+            body.stream = false;
+
+            const res = await fetch(`${base}/v1/chat/completions`, {
+                method: 'POST',
+                headers: this.headers(apiKey),
+                body: JSON.stringify(body),
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error?.message || `Local LLM error: ${res.status}. Is the server running at ${base}?`);
+            }
+
+            const data = await res.json();
+            return data.choices?.[0]?.message?.content || '';
+        },
+    },
 };
 
 /* ---- Public API ---- */
@@ -261,10 +332,10 @@ export function getProviders() {
     }));
 }
 
-export async function listModels(providerId, apiKey) {
+export async function listModels(providerId, apiKey, baseUrl) {
     const provider = providers[providerId];
     if (!provider) throw new Error(`Unknown provider: ${providerId}`);
-    return provider.listModels(apiKey);
+    return provider.listModels(apiKey, baseUrl);
 }
 
 export async function chat(messages, options = {}) {
@@ -274,12 +345,16 @@ export async function chat(messages, options = {}) {
     const provider = providers[config.provider];
     if (!provider) throw new Error(`Unknown provider: ${config.provider}`);
 
-    return provider.chat(config.apiKey, config.model, messages, options);
+    return provider.chat(config.apiKey, config.model, messages, options, config.baseUrl);
 }
 
 export function isConfigured() {
     const config = store.constructor.getApiConfig();
-    return !!(config && config.provider && config.apiKey && config.model);
+    if (!config || !config.provider || !config.model) return false;
+    // Local providers don't require an API key
+    const provider = providers[config.provider];
+    if (provider?.isLocal) return true;
+    return !!config.apiKey;
 }
 
 export function getConfig() {
