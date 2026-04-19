@@ -193,6 +193,63 @@ const providers = {
             return data.choices?.[0]?.message?.content || '';
         },
     },
+
+    openrouter: {
+        name: 'OpenRouter',
+        needsProxy: false,
+        baseUrl: 'https://openrouter.ai',
+
+        headers(apiKey) {
+            return {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': window.location.origin,
+                'X-OpenRouter-Title': 'ResumeCrafter',
+            };
+        },
+
+        async listModels(apiKey) {
+            const res = await fetch(`${this.baseUrl}/api/v1/models`, {
+                headers: this.headers(apiKey),
+            });
+            if (!res.ok) throw new Error(`OpenRouter API error: ${res.status}`);
+            const data = await res.json();
+
+            return (data.data || [])
+                .filter(m => m.id && m.context_length > 0)
+                .map(m => ({
+                    id: m.id,
+                    name: m.name || m.id,
+                }))
+                .sort((a, b) => a.name.localeCompare(b.name));
+        },
+
+        async chat(apiKey, model, messages, options = {}) {
+            const body = {
+                model,
+                messages: messages.map(m => ({ role: m.role, content: m.content })),
+                max_tokens: options.maxTokens || 4096,
+            };
+
+            if (options.temperature !== undefined) {
+                body.temperature = options.temperature;
+            }
+
+            const res = await fetch(`${this.baseUrl}/api/v1/chat/completions`, {
+                method: 'POST',
+                headers: this.headers(apiKey),
+                body: JSON.stringify(body),
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error?.message || `OpenRouter API error: ${res.status}`);
+            }
+
+            const data = await res.json();
+            return data.choices?.[0]?.message?.content || '';
+        },
+    },
 };
 
 /* ---- Public API ---- */

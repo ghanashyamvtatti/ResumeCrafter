@@ -36,12 +36,27 @@ export async function exportPDF(resumeHTML, filename = 'resume.pdf') {
     background: white;
     padding: 0;
     width: 7.3in;
-    font-size: 11pt;
-    line-height: 1.4;
+    font-size: 10.5pt;
+    line-height: 1.3;
+    overflow: hidden;
   `;
     document.body.appendChild(wrapper);
 
     try {
+        // Dynamic scaling: shrink font-size until content fits one page
+        // Available height = (11in - 0.5in top - 0.5in bottom) * 96dpi = 960px
+        const MAX_HEIGHT = 960;
+        const MIN_FONT_PT = 8;
+        let currentPt = 10.5;
+
+        while (wrapper.scrollHeight > MAX_HEIGHT && currentPt > MIN_FONT_PT) {
+            currentPt -= 0.25;
+            wrapper.style.fontSize = `${currentPt}pt`;
+        }
+
+        // Hard clamp height as safety net
+        wrapper.style.maxHeight = `${MAX_HEIGHT}px`;
+
         await html2pdf().set(options).from(wrapper).save();
     } finally {
         document.body.removeChild(wrapper);
@@ -351,7 +366,7 @@ export function generateResumeHTML(resumeData) {
     const softSkills = (skills.soft || []).map(s => typeof s === 'string' ? s : s.name).filter(Boolean);
 
     return `
-    <div style="font-family: 'Inter', Arial, Helvetica, sans-serif; color: #1a1a2e; max-width: 7.5in; margin: 0 auto; font-size: 10.5pt; line-height: 1.35;">
+    <div style="font-family: 'Inter', Arial, Helvetica, sans-serif; color: #1a1a2e; max-width: 7.5in; margin: 0 auto; font-size: 10pt; line-height: 1.3;">
       <!-- Contact -->
       <div style="text-align: center; margin-bottom: 8px;">
         <h1 style="font-size: 20pt; font-weight: 800; margin: 0 0 4px 0; color: #1a1a2e; letter-spacing: -0.5px;">${contact.fullName || 'Your Name'}</h1>
@@ -368,10 +383,10 @@ export function generateResumeHTML(resumeData) {
 
       ${experience.length > 0 ? `
       <!-- Experience -->
-      <div style="border-top: 1.5px solid #1a1a2e; padding-top: 8px; margin-top: 10px;">
-        <h2 style="font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 6px 0; color: #1a1a2e;">Work Experience</h2>
+      <div style="border-top: 1.5px solid #1a1a2e; padding-top: 6px; margin-top: 6px;">
+        <h2 style="font-size: 10.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0; color: #1a1a2e;">Work Experience</h2>
         ${experience.map(exp => `
-          <div style="margin-bottom: 10px;">
+          <div style="margin-bottom: 6px;">
             <div style="display: flex; justify-content: space-between; align-items: baseline;">
               <div>
                 <span style="font-weight: 700; font-size: 10.5pt;">${exp.title || ''}</span>
@@ -393,8 +408,8 @@ export function generateResumeHTML(resumeData) {
 
       ${education.length > 0 ? `
       <!-- Education -->
-      <div style="border-top: 1.5px solid #1a1a2e; padding-top: 8px; margin-top: 10px;">
-        <h2 style="font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 6px 0; color: #1a1a2e;">Education</h2>
+      <div style="border-top: 1.5px solid #1a1a2e; padding-top: 6px; margin-top: 6px;">
+        <h2 style="font-size: 10.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0; color: #1a1a2e;">Education</h2>
         ${education.map(edu => `
           <div style="margin-bottom: 6px;">
             <div style="display: flex; justify-content: space-between; align-items: baseline;">
@@ -410,16 +425,16 @@ export function generateResumeHTML(resumeData) {
 
       ${techSkills.length > 0 || softSkills.length > 0 ? `
       <!-- Skills -->
-      <div style="border-top: 1.5px solid #1a1a2e; padding-top: 8px; margin-top: 10px;">
-        <h2 style="font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0; color: #1a1a2e;">Skills</h2>
+      <div style="border-top: 1.5px solid #1a1a2e; padding-top: 6px; margin-top: 6px;">
+        <h2 style="font-size: 10.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0; color: #1a1a2e;">Skills</h2>
         ${techSkills.length > 0 ? `<p style="margin: 0 0 3px 0; font-size: 10pt;"><strong>Technical:</strong> ${techSkills.join(', ')}</p>` : ''}
         ${softSkills.length > 0 ? `<p style="margin: 0; font-size: 10pt;"><strong>Soft Skills:</strong> ${softSkills.join(', ')}</p>` : ''}
       </div>` : ''}
 
       ${certs.length > 0 ? `
       <!-- Certifications -->
-      <div style="border-top: 1.5px solid #1a1a2e; padding-top: 8px; margin-top: 10px;">
-        <h2 style="font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0; color: #1a1a2e;">Certifications</h2>
+      <div style="border-top: 1.5px solid #1a1a2e; padding-top: 6px; margin-top: 6px;">
+        <h2 style="font-size: 10.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0; color: #1a1a2e;">Certifications</h2>
         <ul style="margin: 0; padding-left: 18px;">
           ${certs.map(c => `<li style="margin-bottom: 2px; font-size: 10pt;"><strong>${c.name || ''}</strong> — ${c.issuer || ''}${c.date ? ` (${c.date})` : ''}</li>`).join('')}
         </ul>
@@ -427,8 +442,8 @@ export function generateResumeHTML(resumeData) {
 
       ${projects.length > 0 ? `
       <!-- Projects -->
-      <div style="border-top: 1.5px solid #1a1a2e; padding-top: 8px; margin-top: 10px;">
-        <h2 style="font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 6px 0; color: #1a1a2e;">Projects</h2>
+      <div style="border-top: 1.5px solid #1a1a2e; padding-top: 6px; margin-top: 6px;">
+        <h2 style="font-size: 10.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0; color: #1a1a2e;">Projects</h2>
         ${projects.map(p => `
           <div style="margin-bottom: 8px;">
             <span style="font-weight: 700; font-size: 10.5pt;">${p.name || ''}</span>

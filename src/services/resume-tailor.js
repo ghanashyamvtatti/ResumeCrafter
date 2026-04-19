@@ -13,15 +13,25 @@ export async function tailorResume(masterResume, jobDescription) {
     const response = await chat([
         {
             role: 'system',
-            content: `You are an expert ATS resume optimizer. Given a master resume (with all career data) and a job description, create the most effective single-page resume by:
+            content: `You are an expert ATS resume optimizer. Given a master resume and a job description, produce a **single-page** tailored resume.
 
-1. Cherry-picking the most relevant experience, skills, projects, and achievements
-2. Rewriting bullet points to match the job's keywords and requirements
-3. Crafting a targeted professional summary
-4. Prioritizing items that demonstrate direct relevance to the role
-5. Ensuring ATS-friendliness: standard section names, keyword optimization, quantified achievements
+STRICT CONTENT LIMITS — the resume MUST fit on one US Letter page (8.5 × 11 in) with 0.5 in margins. Violating any limit will cause the resume to overflow:
+• Professional summary: 2–3 sentences, MAX 50 words total.
+• Experience: select EXACTLY 2–3 entries. Each entry gets EXACTLY 3 concise bullet points (one line each, ~15 words max per bullet). Use strong action verbs and quantify achievements.
+• Education: include all entries but keep each to one line (degree, institution, dates).
+• Technical skills: list 8–10 most relevant skills as a flat comma-separated list. No categories or sub-groups.
+• Soft skills: list 3–5 max, or omit if not relevant.
+• Projects: include AT MOST 1 project with 2 bullet points, OR omit the projects section entirely if experience is strong enough.
+• Certifications: include AT MOST 3 relevant certifications as a simple list, OR omit if not directly relevant.
 
-Return the tailored resume as valid JSON matching this schema:
+PRIORITIES:
+1. Cherry-pick experience and skills that directly match the job description keywords
+2. Rewrite bullets to mirror the JD's language and requirements
+3. Quantify achievements wherever possible (%, $, counts)
+4. Use standard ATS section names: Professional Summary, Work Experience, Education, Skills, Projects, Certifications
+5. Err on the side of BREVITY — less content that fits on one page is better than more content that overflows
+
+Return the tailored resume as valid JSON matching this EXACT schema:
 {
   "contact": { "fullName": "", "email": "", "phone": "", "location": "", "linkedin": "", "portfolio": "", "github": "" },
   "summary": { "text": "" },
@@ -32,12 +42,7 @@ Return the tailored resume as valid JSON matching this schema:
   "projects": [{ "name": "", "description": "", "technologies": [], "bullets": [{ "text": "" }] }]
 }
 
-Rules:
-- Select at most 3-4 experience entries with 3-4 bullets each
-- Include 8-12 most relevant technical skills
-- Include only relevant certifications and projects
-- Keep content concise enough for a single page
-- Return ONLY valid JSON, no markdown or explanation.`
+Return ONLY valid JSON. No markdown fences, no explanation, no commentary.`
         },
         {
             role: 'user',
